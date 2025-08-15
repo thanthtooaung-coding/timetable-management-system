@@ -1,198 +1,146 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { TimetableGrid } from "@/components/timetable-grid"
-import { ManageTimetableModal } from "@/components/manage-timetable-modal"
-import { ManageActivityTypesModal } from "@/components/manage-activity-types-modal"
-import { ManageDaysModal } from "@/components/manage-days-modal"
-import { ManageTimeSlotsModal } from "@/components/manage-time-slots-modal"
-
-export type TimetableEntry = {
-  day: string
-  period: number
-  type: string
-  subject?: string
-}
-
-export type ActivityType = {
-  id: string
-  name: string
-  color: string
-  needsSubject: boolean
-}
-
-export type Day = {
-  id: string
-  name: string
-  displayName: string
-}
-
-export type TimeSlot = {
-  id: string
-  period: number
-  displayName: string
-}
-
-const defaultActivityTypes: ActivityType[] = [
-  { id: "lecture", name: "Lecture", color: "#fecaca", needsSubject: true }, // red-200
-  { id: "tutorial", name: "Tutorial", color: "#fed7aa", needsSubject: true }, // orange-200
-  { id: "lunch", name: "Lunch Time", color: "#fde68a", needsSubject: false }, // yellow-200
-  { id: "free", name: "Free Period", color: "#d1fae5", needsSubject: false }, // green-200
-]
-
-const defaultDays: Day[] = [
-  { id: "monday", name: "MONDAY", displayName: "Monday" },
-  { id: "tuesday", name: "TUESDAY", displayName: "Tuesday" },
-  { id: "wednesday", name: "WEDNESDAY", displayName: "Wednesday" },
-  { id: "thursday", name: "THURSDAY", displayName: "Thursday" },
-  { id: "friday", name: "FRIDAY", displayName: "Friday" },
-]
-
-const defaultTimeSlots: TimeSlot[] = [
-  { id: "period1", period: 1, displayName: "Period 1" },
-  { id: "period2", period: 2, displayName: "Period 2" },
-  { id: "period3", period: 3, displayName: "Period 3" },
-  { id: "period4", period: 4, displayName: "Period 4" },
-  { id: "period5", period: 5, displayName: "Period 5" },
-  { id: "period6", period: 6, displayName: "Period 6" },
-]
-
-const initialTimetable: TimetableEntry[] = [
-  { day: "MONDAY", period: 1, type: "Lecture", subject: "MANAGEMENT" },
-  { day: "MONDAY", period: 2, type: "Lecture", subject: "Ethics" },
-  { day: "MONDAY", period: 3, type: "Lecture", subject: "MATH" },
-  { day: "MONDAY", period: 4, type: "Lecture", subject: "Ethics" },
-  { day: "MONDAY", period: 5, type: "Lecture", subject: "NETWORK" },
-  { day: "TUESDAY", period: 1, type: "Lecture", subject: "NETWORK" },
-  { day: "TUESDAY", period: 2, type: "Free Period", subject: "" },
-  { day: "TUESDAY", period: 3, type: "Lecture", subject: "CO" },
-  { day: "TUESDAY", period: 4, type: "Lecture", subject: "MATH" },
-  { day: "TUESDAY", period: 5, type: "Lecture", subject: "Management" },
-  { day: "TUESDAY", period: 6, type: "Lecture", subject: "JAVA" },
-  { day: "WEDNESDAY", period: 1, type: "Lecture", subject: "NETWORK" },
-  { day: "WEDNESDAY", period: 2, type: "Lecture", subject: "MATH" },
-  { day: "WEDNESDAY", period: 3, type: "Free Period", subject: "" },
-  { day: "WEDNESDAY", period: 4, type: "Lecture", subject: "Management" },
-  { day: "WEDNESDAY", period: 5, type: "Lecture", subject: "CO" },
-  { day: "WEDNESDAY", period: 6, type: "Lecture", subject: "JAVA" },
-  { day: "THURSDAY", period: 1, type: "Lecture", subject: "Management" },
-  { day: "THURSDAY", period: 2, type: "Lecture", subject: "JAVA" },
-  { day: "THURSDAY", period: 3, type: "Lecture", subject: "CO" },
-  { day: "THURSDAY", period: 4, type: "Lecture", subject: "Ethics" },
-  { day: "THURSDAY", period: 5, type: "Lecture", subject: "CO" },
-  { day: "THURSDAY", period: 6, type: "Free Period", subject: "" },
-  { day: "FRIDAY", period: 1, type: "Lecture", subject: "MATH" },
-  { day: "FRIDAY", period: 2, type: "Lecture", subject: "JAVA" },
-  { day: "FRIDAY", period: 3, type: "Lecture", subject: "Ethics" },
-  { day: "FRIDAY", period: 4, type: "Lecture", subject: "Network" },
-  { day: "FRIDAY", period: 5, type: "Free Period", subject: "" },
-  { day: "FRIDAY", period: 6, type: "Free Period", subject: "" },
-]
+import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function Home() {
-  const [timetable, setTimetable] = useState<TimetableEntry[]>(initialTimetable)
-  const [isManageModalOpen, setIsManageModalOpen] = useState(false)
-  const [activityTypes, setActivityTypes] = useState<ActivityType[]>(defaultActivityTypes)
-  const [isActivityTypesModalOpen, setIsActivityTypesModalOpen] = useState(false)
-  const [days, setDays] = useState<Day[]>(defaultDays)
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(defaultTimeSlots)
-  const [isDaysModalOpen, setIsDaysModalOpen] = useState(false)
-  const [isTimeSlotsModalOpen, setIsTimeSlotsModalOpen] = useState(false)
+  const [showSignIn, setShowSignIn] = useState(false)
+  const [showRegister, setShowRegister] = useState(false)
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
 
-  const handleUpdateTimetable = (updatedEntry: TimetableEntry) => {
-    setTimetable((prev) => {
-      const existingIndex = prev.findIndex(
-        (entry) => entry.day === updatedEntry.day && entry.period === updatedEntry.period,
-      )
+  useEffect(() => {
+    if (user && !isLoading) {
+      router.push("/timetable")
+    }
+  }, [user, isLoading, router])
 
-      if (existingIndex >= 0) {
-        const updated = [...prev]
-        updated[existingIndex] = updatedEntry
-        return updated
-      } else {
-        return [...prev, updatedEntry]
-      }
-    })
-  }
-
-  const handleAddActivityType = (activityType: ActivityType) => {
-    setActivityTypes((prev) => [...prev, activityType])
-  }
-
-  const handleUpdateActivityType = (updatedType: ActivityType) => {
-    setActivityTypes((prev) => prev.map((type) => (type.id === updatedType.id ? updatedType : type)))
-  }
-
-  const handleDeleteActivityType = (id: string) => {
-    setActivityTypes((prev) => prev.filter((type) => type.id !== id))
-    // Remove this activity type from timetable entries
-    setTimetable((prev) =>
-      prev.map((entry) =>
-        entry.type === activityTypes.find((type) => type.id === id)?.name
-          ? { ...entry, type: "Free Period", subject: "" }
-          : entry,
-      ),
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 flex items-center justify-center">
+        <div className="text-2xl text-gray-600">Loading...</div>
+      </div>
     )
   }
 
-  const handleAddDay = (day: Day) => {
-    setDays((prev) => [...prev, day])
+  if (user) {
+    return null
   }
 
-  const handleUpdateDay = (updatedDay: Day) => {
-    const oldDay = days.find((d) => d.id === updatedDay.id)
-    setDays((prev) => prev.map((day) => (day.id === updatedDay.id ? updatedDay : day)))
-
-    // Update timetable entries with the new day name
-    if (oldDay && oldDay.name !== updatedDay.name) {
-      setTimetable((prev) =>
-        prev.map((entry) => (entry.day === oldDay.name ? { ...entry, day: updatedDay.name } : entry)),
-      )
-    }
+  if (showSignIn) {
+    return <SignInPage onBack={() => setShowSignIn(false)} />
   }
 
-  const handleDeleteDay = (id: string) => {
-    const dayToDelete = days.find((d) => d.id === id)
-    setDays((prev) => prev.filter((day) => day.id !== id))
-
-    // Remove timetable entries for this day
-    if (dayToDelete) {
-      setTimetable((prev) => prev.filter((entry) => entry.day !== dayToDelete.name))
-    }
+  if (showRegister) {
+    return <RegisterPage onBack={() => setShowRegister(false)} />
   }
 
-  const handleAddTimeSlot = (timeSlot: TimeSlot) => {
-    setTimeSlots((prev) => [...prev, timeSlot])
-  }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-10 left-10 w-16 h-16 bg-blue-200 rounded-full opacity-60"></div>
+        <div className="absolute top-20 right-20 w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-blue-300 opacity-70"></div>
+        <div className="absolute bottom-20 left-20 w-12 h-8 bg-yellow-200 opacity-60"></div>
+        <div className="absolute top-1/2 right-10 w-20 h-20 bg-pink-200 rounded-full opacity-50"></div>
+        <div className="absolute bottom-10 right-1/4 w-0 h-0 border-l-10 border-r-10 border-b-16 border-l-transparent border-r-transparent border-b-blue-300 opacity-60"></div>
+        <div className="absolute top-1/3 left-1/4 w-6 h-6 bg-yellow-300 rotate-45 opacity-70"></div>
+        <div className="absolute bottom-1/3 right-1/3 w-14 h-14 bg-pink-300 rounded-full opacity-40"></div>
+      </div>
 
-  const handleUpdateTimeSlot = (updatedTimeSlot: TimeSlot) => {
-    const oldTimeSlot = timeSlots.find((ts) => ts.id === updatedTimeSlot.id)
-    setTimeSlots((prev) => prev.map((slot) => (slot.id === updatedTimeSlot.id ? updatedTimeSlot : slot)))
+      <nav className="relative z-10 flex justify-between items-center p-6">
+        <h1 className="text-2xl font-bold text-gray-800 font-serif">School Timetable</h1>
+        <div className="flex gap-4">
+          <Button
+            onClick={() => setShowSignIn(true)}
+            variant="outline"
+            className="border-pink-300 text-pink-600 hover:bg-pink-50 px-6 py-2 rounded-xl"
+          >
+            Sign In
+          </Button>
+          <Button
+            onClick={() => setShowRegister(true)}
+            className="bg-pink-400 hover:bg-pink-500 text-white px-6 py-2 rounded-xl shadow-lg"
+          >
+            Register
+          </Button>
+        </div>
+      </nav>
 
-    // Update timetable entries with the new period number
-    if (oldTimeSlot && oldTimeSlot.period !== updatedTimeSlot.period) {
-      setTimetable((prev) =>
-        prev.map((entry) =>
-          entry.period === oldTimeSlot.period ? { ...entry, period: updatedTimeSlot.period } : entry,
-        ),
-      )
-    }
-  }
+      <div className="relative z-10 container mx-auto px-4 py-16">
+        <div className="text-center max-w-4xl mx-auto">
+          <h2 className="text-5xl md:text-7xl font-bold text-gray-800 mb-6 font-serif">Manage Your School Schedule</h2>
+          <p className="text-xl md:text-2xl text-gray-600 mb-12 leading-relaxed">
+            Create, customize, and organize your school timetable with ease. Add subjects, manage time slots, and keep
+            track of your daily schedule.
+          </p>
 
-  const handleDeleteTimeSlot = (id: string) => {
-    const timeSlotToDelete = timeSlots.find((ts) => ts.id === id)
-    setTimeSlots((prev) => prev.filter((slot) => slot.id !== id))
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <div className="w-16 h-16 bg-pink-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📅</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Dynamic Scheduling</h3>
+              <p className="text-gray-600">Create custom days and time slots that fit your school's unique schedule.</p>
+            </div>
 
-    // Remove timetable entries for this time slot
-    if (timeSlotToDelete) {
-      setTimetable((prev) => prev.filter((entry) => entry.period !== timeSlotToDelete.period))
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🎨</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Color Coding</h3>
+              <p className="text-gray-600">
+                Assign custom colors to different activity types for easy visual organization.
+              </p>
+            </div>
+
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <div className="w-16 h-16 bg-yellow-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Easy Management</h3>
+              <p className="text-gray-600">
+                Quickly add, edit, or remove subjects and activities with our intuitive interface.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => setShowRegister(true)}
+            className="bg-gradient-to-r from-pink-400 to-blue-400 hover:from-pink-500 hover:to-blue-500 text-white px-8 py-4 rounded-xl shadow-lg text-lg font-medium"
+          >
+            Get Started Today
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SignInPage({ onBack }: { onBack: () => void }) {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const { signIn, isLoading } = useAuth()
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    const success = await signIn(email, password)
+
+    if (success) {
+      router.push("/timetable")
+    } else {
+      setError("Invalid email or password. Password must be at least 6 characters.")
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
-      {/* ... existing decorative elements ... */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-10 left-10 w-16 h-16 bg-blue-200 rounded-full opacity-60"></div>
         <div className="absolute top-20 right-20 w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-blue-300 opacity-70"></div>
@@ -204,74 +152,213 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-6 font-serif">School Timetable</h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 justify-center max-w-4xl mx-auto">
-            <Button
-              onClick={() => setIsManageModalOpen(true)}
-              className="bg-pink-400 hover:bg-pink-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
-            >
-              Manage Timetable
-            </Button>
-            <Button
-              onClick={() => setIsActivityTypesModalOpen(true)}
-              className="bg-blue-400 hover:bg-blue-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
-            >
-              Manage Activity Types
-            </Button>
-            <Button
-              onClick={() => setIsDaysModalOpen(true)}
-              className="bg-green-400 hover:bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
-            >
-              Manage Days
-            </Button>
-            <Button
-              onClick={() => setIsTimeSlotsModalOpen(true)}
-              className="bg-purple-400 hover:bg-purple-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
-            >
-              Manage Time Slots
-            </Button>
+        <div className="max-w-md mx-auto">
+          <Button onClick={onBack} variant="ghost" className="mb-6 text-gray-600 hover:text-gray-800">
+            ← Back to Home
+          </Button>
+
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+            <h2 className="text-3xl font-bold text-gray-800 text-center mb-6 font-serif">Sign In</h2>
+
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">{error}</div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-pink-400 hover:bg-pink-500 text-white py-3 rounded-xl shadow-lg font-medium"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing In..." : "Sign In"}
+              </Button>
+            </form>
+
+            <p className="text-center text-gray-600 mt-6">
+              Don't have an account?{" "}
+              <button
+                onClick={() => {
+                  onBack()
+                }}
+                className="text-pink-600 hover:text-pink-700 font-medium"
+                disabled={isLoading}
+              >
+                Register here
+              </button>
+            </p>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
 
-        <TimetableGrid timetable={timetable} activityTypes={activityTypes} days={days} timeSlots={timeSlots} />
+function RegisterPage({ onBack }: { onBack: () => void }) {
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState("")
+  const { signUp, isLoading } = useAuth()
+  const router = useRouter()
 
-        <ManageTimetableModal
-          isOpen={isManageModalOpen}
-          onClose={() => setIsManageModalOpen(false)}
-          onUpdate={handleUpdateTimetable}
-          currentTimetable={timetable}
-          activityTypes={activityTypes}
-          days={days}
-          timeSlots={timeSlots}
-        />
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
 
-        <ManageActivityTypesModal
-          isOpen={isActivityTypesModalOpen}
-          onClose={() => setIsActivityTypesModalOpen(false)}
-          activityTypes={activityTypes}
-          onAdd={handleAddActivityType}
-          onUpdate={handleUpdateActivityType}
-          onDelete={handleDeleteActivityType}
-        />
+    if (password !== confirmPassword) {
+      setError("Passwords don't match!")
+      return
+    }
 
-        <ManageDaysModal
-          isOpen={isDaysModalOpen}
-          onClose={() => setIsDaysModalOpen(false)}
-          days={days}
-          onAdd={handleAddDay}
-          onUpdate={handleUpdateDay}
-          onDelete={handleDeleteDay}
-        />
+    const success = await signUp(name, email, password)
 
-        <ManageTimeSlotsModal
-          isOpen={isTimeSlotsModalOpen}
-          onClose={() => setIsTimeSlotsModalOpen(false)}
-          timeSlots={timeSlots}
-          onAdd={handleAddTimeSlot}
-          onUpdate={handleUpdateTimeSlot}
-          onDelete={handleDeleteTimeSlot}
-        />
+    if (success) {
+      router.push("/timetable")
+    } else {
+      setError("Registration failed. Please check your information and try again.")
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-10 left-10 w-16 h-16 bg-blue-200 rounded-full opacity-60"></div>
+        <div className="absolute top-20 right-20 w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-blue-300 opacity-70"></div>
+        <div className="absolute bottom-20 left-20 w-12 h-8 bg-yellow-200 opacity-60"></div>
+        <div className="absolute top-1/2 right-10 w-20 h-20 bg-pink-200 rounded-full opacity-50"></div>
+        <div className="absolute bottom-10 right-1/4 w-0 h-0 border-l-10 border-r-10 border-b-16 border-l-transparent border-r-transparent border-b-blue-300 opacity-60"></div>
+        <div className="absolute top-1/3 left-1/4 w-6 h-6 bg-yellow-300 rotate-45 opacity-70"></div>
+        <div className="absolute bottom-1/3 right-1/3 w-14 h-14 bg-pink-300 rounded-full opacity-40"></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto">
+          <Button onClick={onBack} variant="ghost" className="mb-6 text-gray-600 hover:text-gray-800">
+            ← Back to Home
+          </Button>
+
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+            <h2 className="text-3xl font-bold text-gray-800 text-center mb-6 font-serif">Register</h2>
+
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">{error}</div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-pink-400 hover:bg-pink-500 text-white py-3 rounded-xl shadow-lg font-medium"
+                disabled={isLoading}
+              >
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Button>
+            </form>
+
+            <p className="text-center text-gray-600 mt-6">
+              Already have an account?{" "}
+              <button
+                onClick={() => {
+                  onBack()
+                }}
+                className="text-pink-600 hover:text-pink-700 font-medium"
+                disabled={isLoading}
+              >
+                Sign in here
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )
