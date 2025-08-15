@@ -1,14 +1,13 @@
-import type { TimetableEntry, ActivityType } from "@/app/page"
+import type { TimetableEntry, ActivityType, Day, TimeSlot } from "@/app/page"
 
 interface TimetableGridProps {
   timetable: TimetableEntry[]
-  activityTypes: ActivityType[] // Added activityTypes prop
+  activityTypes: ActivityType[]
+  days: Day[] // Added dynamic days prop
+  timeSlots: TimeSlot[] // Added dynamic time slots prop
 }
 
-const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-const periods = [1, 2, 3, 4, 5, 6]
-
-export function TimetableGrid({ timetable, activityTypes }: TimetableGridProps) {
+export function TimetableGrid({ timetable, activityTypes, days, timeSlots }: TimetableGridProps) {
   const getEntryForSlot = (day: string, period: number) => {
     return timetable.find((entry) => entry.day === day && entry.period === period)
   }
@@ -18,21 +17,26 @@ export function TimetableGrid({ timetable, activityTypes }: TimetableGridProps) 
     return activityType?.color || "#fce7f3" // default pink-100
   }
 
+  const sortedTimeSlots = [...timeSlots].sort((a, b) => a.period - b.period)
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full">
-          <div className="grid grid-cols-7 gap-1 md:gap-2">
+          <div
+            className={`grid gap-1 md:gap-2`}
+            style={{ gridTemplateColumns: `repeat(${sortedTimeSlots.length + 1}, minmax(0, 1fr))` }}
+          >
             {/* Header Row */}
             <div className="bg-blue-200 border-2 border-gray-800 p-3 md:p-4 text-center font-bold text-gray-800 rounded-lg">
               Time
             </div>
-            {periods.map((period) => (
+            {sortedTimeSlots.map((timeSlot) => (
               <div
-                key={period}
+                key={timeSlot.id}
                 className="bg-pink-300 border-2 border-gray-800 p-3 md:p-4 text-center font-bold text-gray-800 rounded-lg"
               >
-                {period}
+                {timeSlot.period}
               </div>
             ))}
 
@@ -40,16 +44,16 @@ export function TimetableGrid({ timetable, activityTypes }: TimetableGridProps) 
             {days.map((day) => (
               <>
                 <div
-                  key={day}
+                  key={day.id}
                   className="bg-blue-200 border-2 border-gray-800 p-3 md:p-4 text-center font-bold text-gray-800 rounded-lg flex items-center justify-center"
                 >
-                  <span className="text-xs md:text-sm lg:text-base">{day}</span>
+                  <span className="text-xs md:text-sm lg:text-base">{day.name}</span>
                 </div>
-                {periods.map((period) => {
-                  const entry = getEntryForSlot(day, period)
+                {sortedTimeSlots.map((timeSlot) => {
+                  const entry = getEntryForSlot(day.name, timeSlot.period)
                   return (
                     <div
-                      key={`${day}-${period}`}
+                      key={`${day.name}-${timeSlot.period}`}
                       style={{ backgroundColor: entry?.type ? getActivityTypeColor(entry.type) : "#fce7f3" }}
                       className="border-2 border-gray-800 p-2 md:p-3 text-center rounded-lg min-h-[60px] md:min-h-[80px] flex items-center justify-center"
                     >

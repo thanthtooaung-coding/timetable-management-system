@@ -6,18 +6,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { TimetableEntry, ActivityType } from "@/app/page"
+import type { TimetableEntry, ActivityType, Day, TimeSlot } from "@/app/page"
 
 interface ManageTimetableModalProps {
   isOpen: boolean
   onClose: () => void
   onUpdate: (entry: TimetableEntry) => void
   currentTimetable: TimetableEntry[]
-  activityTypes: ActivityType[] // Added activityTypes prop
+  activityTypes: ActivityType[]
+  days: Day[] // Added dynamic days prop
+  timeSlots: TimeSlot[] // Added dynamic time slots prop
 }
-
-const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
-const periods = [1, 2, 3, 4, 5, 6]
 
 export function ManageTimetableModal({
   isOpen,
@@ -25,10 +24,12 @@ export function ManageTimetableModal({
   onUpdate,
   currentTimetable,
   activityTypes,
+  days,
+  timeSlots,
 }: ManageTimetableModalProps) {
-  const [selectedDay, setSelectedDay] = useState<string>("MONDAY")
-  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(1)
-  const [selectedType, setSelectedType] = useState<string>("Free Period") // Changed to string
+  const [selectedDay, setSelectedDay] = useState<string>(days[0]?.name || "")
+  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(timeSlots[0]?.period || null)
+  const [selectedType, setSelectedType] = useState<string>("Free Period")
   const [subjectName, setSubjectName] = useState("")
 
   const getCurrentEntry = () => {
@@ -78,9 +79,8 @@ export function ManageTimetableModal({
     onUpdate(updatedEntry)
     onClose()
 
-    // Reset form
-    setSelectedDay("MONDAY")
-    setSelectedPeriod(1)
+    setSelectedDay(days[0]?.name || "")
+    setSelectedPeriod(timeSlots[0]?.period || null)
     setSelectedType("Free Period")
     setSubjectName("")
   }
@@ -90,6 +90,8 @@ export function ManageTimetableModal({
   }
 
   const needsSubject = getSelectedActivityType()?.needsSubject || false
+
+  const sortedTimeSlots = [...timeSlots].sort((a, b) => a.period - b.period)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,8 +111,8 @@ export function ManageTimetableModal({
               </SelectTrigger>
               <SelectContent>
                 {days.map((day) => (
-                  <SelectItem key={day} value={day}>
-                    {day}
+                  <SelectItem key={day.id} value={day.name}>
+                    {day.displayName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -121,14 +123,14 @@ export function ManageTimetableModal({
             <Label htmlFor="period" className="text-sm font-medium text-gray-700">
               Time Slot
             </Label>
-            <Select value={selectedPeriod?.toString() || "1"} onValueChange={handlePeriodChange}>
+            <Select value={selectedPeriod?.toString() || ""} onValueChange={handlePeriodChange}>
               <SelectTrigger className="bg-white border-2 border-gray-300 rounded-lg">
                 <SelectValue placeholder="Select a time slot" />
               </SelectTrigger>
               <SelectContent>
-                {periods.map((period) => (
-                  <SelectItem key={period} value={period.toString()}>
-                    Period {period}
+                {sortedTimeSlots.map((timeSlot) => (
+                  <SelectItem key={timeSlot.id} value={timeSlot.period.toString()}>
+                    {timeSlot.displayName}
                   </SelectItem>
                 ))}
               </SelectContent>

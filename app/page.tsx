@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { TimetableGrid } from "@/components/timetable-grid"
 import { ManageTimetableModal } from "@/components/manage-timetable-modal"
 import { ManageActivityTypesModal } from "@/components/manage-activity-types-modal"
+import { ManageDaysModal } from "@/components/manage-days-modal"
+import { ManageTimeSlotsModal } from "@/components/manage-time-slots-modal"
 
 export type TimetableEntry = {
   day: string
@@ -20,11 +22,40 @@ export type ActivityType = {
   needsSubject: boolean
 }
 
+export type Day = {
+  id: string
+  name: string
+  displayName: string
+}
+
+export type TimeSlot = {
+  id: string
+  period: number
+  displayName: string
+}
+
 const defaultActivityTypes: ActivityType[] = [
   { id: "lecture", name: "Lecture", color: "#fecaca", needsSubject: true }, // red-200
   { id: "tutorial", name: "Tutorial", color: "#fed7aa", needsSubject: true }, // orange-200
   { id: "lunch", name: "Lunch Time", color: "#fde68a", needsSubject: false }, // yellow-200
   { id: "free", name: "Free Period", color: "#d1fae5", needsSubject: false }, // green-200
+]
+
+const defaultDays: Day[] = [
+  { id: "monday", name: "MONDAY", displayName: "Monday" },
+  { id: "tuesday", name: "TUESDAY", displayName: "Tuesday" },
+  { id: "wednesday", name: "WEDNESDAY", displayName: "Wednesday" },
+  { id: "thursday", name: "THURSDAY", displayName: "Thursday" },
+  { id: "friday", name: "FRIDAY", displayName: "Friday" },
+]
+
+const defaultTimeSlots: TimeSlot[] = [
+  { id: "period1", period: 1, displayName: "Period 1" },
+  { id: "period2", period: 2, displayName: "Period 2" },
+  { id: "period3", period: 3, displayName: "Period 3" },
+  { id: "period4", period: 4, displayName: "Period 4" },
+  { id: "period5", period: 5, displayName: "Period 5" },
+  { id: "period6", period: 6, displayName: "Period 6" },
 ]
 
 const initialTimetable: TimetableEntry[] = [
@@ -64,6 +95,10 @@ export default function Home() {
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>(defaultActivityTypes)
   const [isActivityTypesModalOpen, setIsActivityTypesModalOpen] = useState(false)
+  const [days, setDays] = useState<Day[]>(defaultDays)
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(defaultTimeSlots)
+  const [isDaysModalOpen, setIsDaysModalOpen] = useState(false)
+  const [isTimeSlotsModalOpen, setIsTimeSlotsModalOpen] = useState(false)
 
   const handleUpdateTimetable = (updatedEntry: TimetableEntry) => {
     setTimetable((prev) => {
@@ -101,9 +136,63 @@ export default function Home() {
     )
   }
 
+  const handleAddDay = (day: Day) => {
+    setDays((prev) => [...prev, day])
+  }
+
+  const handleUpdateDay = (updatedDay: Day) => {
+    const oldDay = days.find((d) => d.id === updatedDay.id)
+    setDays((prev) => prev.map((day) => (day.id === updatedDay.id ? updatedDay : day)))
+
+    // Update timetable entries with the new day name
+    if (oldDay && oldDay.name !== updatedDay.name) {
+      setTimetable((prev) =>
+        prev.map((entry) => (entry.day === oldDay.name ? { ...entry, day: updatedDay.name } : entry)),
+      )
+    }
+  }
+
+  const handleDeleteDay = (id: string) => {
+    const dayToDelete = days.find((d) => d.id === id)
+    setDays((prev) => prev.filter((day) => day.id !== id))
+
+    // Remove timetable entries for this day
+    if (dayToDelete) {
+      setTimetable((prev) => prev.filter((entry) => entry.day !== dayToDelete.name))
+    }
+  }
+
+  const handleAddTimeSlot = (timeSlot: TimeSlot) => {
+    setTimeSlots((prev) => [...prev, timeSlot])
+  }
+
+  const handleUpdateTimeSlot = (updatedTimeSlot: TimeSlot) => {
+    const oldTimeSlot = timeSlots.find((ts) => ts.id === updatedTimeSlot.id)
+    setTimeSlots((prev) => prev.map((slot) => (slot.id === updatedTimeSlot.id ? updatedTimeSlot : slot)))
+
+    // Update timetable entries with the new period number
+    if (oldTimeSlot && oldTimeSlot.period !== updatedTimeSlot.period) {
+      setTimetable((prev) =>
+        prev.map((entry) =>
+          entry.period === oldTimeSlot.period ? { ...entry, period: updatedTimeSlot.period } : entry,
+        ),
+      )
+    }
+  }
+
+  const handleDeleteTimeSlot = (id: string) => {
+    const timeSlotToDelete = timeSlots.find((ts) => ts.id === id)
+    setTimeSlots((prev) => prev.filter((slot) => slot.id !== id))
+
+    // Remove timetable entries for this time slot
+    if (timeSlotToDelete) {
+      setTimetable((prev) => prev.filter((entry) => entry.period !== timeSlotToDelete.period))
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
-      {/* Decorative Background Elements */}
+      {/* ... existing decorative elements ... */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-10 left-10 w-16 h-16 bg-blue-200 rounded-full opacity-60"></div>
         <div className="absolute top-20 right-20 w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-blue-300 opacity-70"></div>
@@ -117,7 +206,7 @@ export default function Home() {
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-6 font-serif">School Timetable</h1>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 justify-center max-w-4xl mx-auto">
             <Button
               onClick={() => setIsManageModalOpen(true)}
               className="bg-pink-400 hover:bg-pink-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
@@ -130,10 +219,22 @@ export default function Home() {
             >
               Manage Activity Types
             </Button>
+            <Button
+              onClick={() => setIsDaysModalOpen(true)}
+              className="bg-green-400 hover:bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
+            >
+              Manage Days
+            </Button>
+            <Button
+              onClick={() => setIsTimeSlotsModalOpen(true)}
+              className="bg-purple-400 hover:bg-purple-500 text-white px-6 py-3 rounded-xl shadow-lg font-medium"
+            >
+              Manage Time Slots
+            </Button>
           </div>
         </div>
 
-        <TimetableGrid timetable={timetable} activityTypes={activityTypes} />
+        <TimetableGrid timetable={timetable} activityTypes={activityTypes} days={days} timeSlots={timeSlots} />
 
         <ManageTimetableModal
           isOpen={isManageModalOpen}
@@ -141,6 +242,8 @@ export default function Home() {
           onUpdate={handleUpdateTimetable}
           currentTimetable={timetable}
           activityTypes={activityTypes}
+          days={days}
+          timeSlots={timeSlots}
         />
 
         <ManageActivityTypesModal
@@ -150,6 +253,24 @@ export default function Home() {
           onAdd={handleAddActivityType}
           onUpdate={handleUpdateActivityType}
           onDelete={handleDeleteActivityType}
+        />
+
+        <ManageDaysModal
+          isOpen={isDaysModalOpen}
+          onClose={() => setIsDaysModalOpen(false)}
+          days={days}
+          onAdd={handleAddDay}
+          onUpdate={handleUpdateDay}
+          onDelete={handleDeleteDay}
+        />
+
+        <ManageTimeSlotsModal
+          isOpen={isTimeSlotsModalOpen}
+          onClose={() => setIsTimeSlotsModalOpen(false)}
+          timeSlots={timeSlots}
+          onAdd={handleAddTimeSlot}
+          onUpdate={handleUpdateTimeSlot}
+          onDelete={handleDeleteTimeSlot}
         />
       </div>
     </div>
