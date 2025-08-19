@@ -1,13 +1,10 @@
+// contexts/auth-context.tsx
 "use client"
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
+import { createClient } from "@/lib/supabase/client" // Updated import
+import type { User, SupabaseClient } from "@supabase/supabase-js"
 
 interface AuthContextType {
   user: User | null
@@ -20,68 +17,44 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = createClient() // Create the client here
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("auth-user")
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        localStorage.removeItem("auth-user")
-      }
-    }
-    setIsLoading(false)
-  }, [])
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
-
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (email && password.length >= 6) {
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: email.split("@")[0],
-        email: email,
-      }
-
-      setUser(newUser)
-      localStorage.setItem("auth-user", JSON.stringify(newUser))
-      setIsLoading(false)
-      return true
-    }
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     setIsLoading(false)
-    return false
+    return !error
   }
 
   const signUp = async (name: string, email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
-
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (name && email && password.length >= 6) {
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: name,
-        email: email,
-      }
-
-      setUser(newUser)
-      localStorage.setItem("auth-user", JSON.stringify(newUser))
-      setIsLoading(false)
-      return true
-    }
-
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+        },
+      },
+    })
     setIsLoading(false)
-    return false
+    return !error
   }
 
-  const signOut = () => {
+  const signOut = async () => {
+    await supabase.auth.signOut()
     setUser(null)
-    localStorage.removeItem("auth-user")
   }
 
   const value: AuthContextType = {

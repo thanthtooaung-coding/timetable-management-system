@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Trash2, Edit, Plus } from "lucide-react"
-import type { TimeSlot } from "@/app/page"
+import { TimeSlot } from "@/app/timetable/page"
 
 interface ManageTimeSlotsModalProps {
   isOpen: boolean
@@ -37,7 +37,7 @@ export function ManageTimeSlotsModal({
       const newTimeSlot: TimeSlot = {
         id: `period${periodNum}`,
         period: periodNum,
-        displayName: newDisplayName,
+        display_name: newDisplayName,
       }
       onAdd(newTimeSlot)
       setNewPeriod("")
@@ -48,19 +48,18 @@ export function ManageTimeSlotsModal({
   const handleEditTimeSlot = (timeSlot: TimeSlot) => {
     setEditingTimeSlot(timeSlot)
     setEditPeriod(timeSlot.period.toString())
-    setEditDisplayName(timeSlot.displayName)
+    setEditDisplayName(timeSlot.display_name)
   }
 
   const handleUpdateTimeSlot = () => {
     const periodNum = Number.parseInt(editPeriod)
     if (editingTimeSlot && periodNum && editDisplayName.trim()) {
-      // Check if period number conflicts with existing slots (excluding current one)
       const hasConflict = timeSlots.some((ts) => ts.period === periodNum && ts.id !== editingTimeSlot.id)
       if (!hasConflict) {
         const updatedTimeSlot: TimeSlot = {
           ...editingTimeSlot,
           period: periodNum,
-          displayName: editDisplayName,
+          display_name: editDisplayName,
         }
         onUpdate(updatedTimeSlot)
         setEditingTimeSlot(null)
@@ -76,7 +75,9 @@ export function ManageTimeSlotsModal({
     setEditDisplayName("")
   }
 
-  const sortedTimeSlots = [...timeSlots].sort((a, b) => a.period - b.period)
+  const sortedTimeSlots = Array.isArray(timeSlots)
+    ? [...timeSlots].sort((a, b) => a.period - b.period)
+    : []
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -181,7 +182,7 @@ export function ManageTimeSlotsModal({
                   ) : (
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-gray-800">{timeSlot.displayName}</div>
+                        <div className="font-medium text-gray-800">{timeSlot.display_name}</div>
                         <div className="text-sm text-gray-600">Period: {timeSlot.period}</div>
                       </div>
                       <div className="flex gap-2">

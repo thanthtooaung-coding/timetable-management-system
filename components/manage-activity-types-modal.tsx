@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Trash2, Edit, Plus } from "lucide-react"
-import type { ActivityType } from "@/app/page"
+import { ActivityType } from "@/app/timetable/page"
 
 interface ManageActivityTypesModalProps {
   isOpen: boolean
@@ -50,7 +50,7 @@ export function ManageActivityTypesModal({
     setFormData({
       name: activityType.name,
       color: activityType.color,
-      needsSubject: activityType.needsSubject,
+      needsSubject: activityType.needs_subject,
     })
   }
 
@@ -63,7 +63,7 @@ export function ManageActivityTypesModal({
         id: editingId,
         name: formData.name.trim(),
         color: formData.color,
-        needsSubject: formData.needsSubject,
+        needs_subject: formData.needsSubject,
       })
     } else {
       // Add new
@@ -71,7 +71,7 @@ export function ManageActivityTypesModal({
         id: Date.now().toString(),
         name: formData.name.trim(),
         color: formData.color,
-        needsSubject: formData.needsSubject,
+        needs_subject: formData.needsSubject,
       })
     }
 
@@ -206,7 +206,7 @@ export function ManageActivityTypesModal({
                     />
                     <div>
                       <span className="font-medium text-gray-800">{activityType.name}</span>
-                      {activityType.needsSubject && (
+                      {activityType.needs_subject && (
                         <span className="text-xs text-gray-500 ml-2">(requires subject)</span>
                       )}
                     </div>

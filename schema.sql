@@ -112,3 +112,37 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, email)
+  VALUES (new.id, new.raw_user_meta_data->>'name', new.email);
+
+  INSERT INTO public.days (user_id, name, display_name)
+  VALUES
+    (new.id, 'MONDAY', 'Monday'),
+    (new.id, 'TUESDAY', 'Tuesday'),
+    (new.id, 'WEDNESDAY', 'Wednesday'),
+    (new.id, 'THURSDAY', 'Thursday'),
+    (new.id, 'FRIDAY', 'Friday');
+
+  INSERT INTO public.time_slots (user_id, period, display_name)
+  VALUES
+    (new.id, 1, 'Period 1'),
+    (new.id, 2, 'Period 2'),
+    (new.id, 3, 'Period 3'),
+    (new.id, 4, 'Period 4'),
+    (new.id, 5, 'Period 5'),
+    (new.id, 6, 'Period 6');
+
+  INSERT INTO public.activity_types (user_id, name, color, needs_subject)
+  VALUES
+    (new.id, 'Lecture', '#fecaca', true),
+    (new.id, 'Tutorial', '#fed7aa', true),
+    (new.id, 'Lunch Time', '#fde68a', false),
+    (new.id, 'Free Period', '#d1fae5', false);
+
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

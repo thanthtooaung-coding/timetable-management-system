@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Trash2, Edit, Plus } from "lucide-react"
-import type { Day } from "@/app/page"
+import { Day } from "@/app/timetable/page"
 
 interface ManageDaysModalProps {
   isOpen: boolean
@@ -29,7 +29,7 @@ export function ManageDaysModal({ isOpen, onClose, days, onAdd, onUpdate, onDele
       const newDay: Day = {
         id: newDayName.toLowerCase().replace(/\s+/g, "-"),
         name: newDayName.toUpperCase(),
-        displayName: newDayDisplayName,
+        display_name: newDayDisplayName,
       }
       onAdd(newDay)
       setNewDayName("")
@@ -40,7 +40,7 @@ export function ManageDaysModal({ isOpen, onClose, days, onAdd, onUpdate, onDele
   const handleEditDay = (day: Day) => {
     setEditingDay(day)
     setEditName(day.name)
-    setEditDisplayName(day.displayName)
+    setEditDisplayName(day.display_name)
   }
 
   const handleUpdateDay = () => {
@@ -48,7 +48,7 @@ export function ManageDaysModal({ isOpen, onClose, days, onAdd, onUpdate, onDele
       const updatedDay: Day = {
         ...editingDay,
         name: editName.toUpperCase(),
-        displayName: editDisplayName,
+        display_name: editDisplayName,
       }
       onUpdate(updatedDay)
       setEditingDay(null)
@@ -148,7 +148,7 @@ export function ManageDaysModal({ isOpen, onClose, days, onAdd, onUpdate, onDele
                   ) : (
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-gray-800">{day.displayName}</div>
+                        <div className="font-medium text-gray-800">{day.display_name}</div>
                         <div className="text-sm text-gray-600">Internal: {day.name}</div>
                       </div>
                       <div className="flex gap-2">

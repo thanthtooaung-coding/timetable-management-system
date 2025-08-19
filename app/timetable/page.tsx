@@ -21,43 +21,43 @@ export type ActivityType = {
   id: string
   name: string
   color: string
-  needsSubject: boolean
+  needs_subject: boolean
 }
 
 export type Day = {
   id: string
   name: string
-  displayName: string
+  display_name: string
 }
 
 export type TimeSlot = {
   id: string
   period: number
-  displayName: string
+  display_name: string
 }
 
 const defaultActivityTypes: ActivityType[] = [
-  { id: "lecture", name: "Lecture", color: "#fecaca", needsSubject: true }, // red-200
-  { id: "tutorial", name: "Tutorial", color: "#fed7aa", needsSubject: true }, // orange-200
-  { id: "lunch", name: "Lunch Time", color: "#fde68a", needsSubject: false }, // yellow-200
-  { id: "free", name: "Free Period", color: "#d1fae5", needsSubject: false }, // green-200
+  { id: "lecture", name: "Lecture", color: "#fecaca", needs_subject: true }, // red-200
+  { id: "tutorial", name: "Tutorial", color: "#fed7aa", needs_subject: true }, // orange-200
+  { id: "lunch", name: "Lunch Time", color: "#fde68a", needs_subject: false }, // yellow-200
+  { id: "free", name: "Free Period", color: "#d1fae5", needs_subject: false }, // green-200
 ]
 
 const defaultDays: Day[] = [
-  { id: "monday", name: "MONDAY", displayName: "Monday" },
-  { id: "tuesday", name: "TUESDAY", displayName: "Tuesday" },
-  { id: "wednesday", name: "WEDNESDAY", displayName: "Wednesday" },
-  { id: "thursday", name: "THURSDAY", displayName: "Thursday" },
-  { id: "friday", name: "FRIDAY", displayName: "Friday" },
+  { id: "monday", name: "MONDAY", display_name: "Monday" },
+  { id: "tuesday", name: "TUESDAY", display_name: "Tuesday" },
+  { id: "wednesday", name: "WEDNESDAY", display_name: "Wednesday" },
+  { id: "thursday", name: "THURSDAY", display_name: "Thursday" },
+  { id: "friday", name: "FRIDAY", display_name: "Friday" },
 ]
 
 const defaultTimeSlots: TimeSlot[] = [
-  { id: "period1", period: 1, displayName: "Period 1" },
-  { id: "period2", period: 2, displayName: "Period 2" },
-  { id: "period3", period: 3, displayName: "Period 3" },
-  { id: "period4", period: 4, displayName: "Period 4" },
-  { id: "period5", period: 5, displayName: "Period 5" },
-  { id: "period6", period: 6, displayName: "Period 6" },
+  { id: "period1", period: 1, display_name: "Period 1" },
+  { id: "period2", period: 2, display_name: "Period 2" },
+  { id: "period3", period: 3, display_name: "Period 3" },
+  { id: "period4", period: 4, display_name: "Period 4" },
+  { id: "period5", period: 5, display_name: "Period 5" },
+  { id: "period6", period: 6, display_name: "Period 6" },
 ]
 
 const initialTimetable: TimetableEntry[] = [
@@ -96,18 +96,69 @@ export default function TimetablePage() {
   const { user, isLoading, signOut } = useAuth()
   const router = useRouter()
 
-  const [timetable, setTimetable] = useState<TimetableEntry[]>(initialTimetable)
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([])
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
+  const [days, setDays] = useState<Day[]>([])
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+
   const [isManageModalOpen, setIsManageModalOpen] = useState(false)
-  const [activityTypes, setActivityTypes] = useState<ActivityType[]>(defaultActivityTypes)
   const [isActivityTypesModalOpen, setIsActivityTypesModalOpen] = useState(false)
-  const [days, setDays] = useState<Day[]>(defaultDays)
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(defaultTimeSlots)
   const [isDaysModalOpen, setIsDaysModalOpen] = useState(false)
   const [isTimeSlotsModalOpen, setIsTimeSlotsModalOpen] = useState(false)
+
+  const fetchData = async () => {
+  // Fetch Days
+  const daysRes = await fetch("/api/days", { cache: 'no-store' });
+  if (daysRes.ok) {
+    setDays(await daysRes.json());
+  } else {
+    console.error("Failed to fetch days");
+    setDays([]); // Set to empty array on failure
+  }
+
+  // Fetch Time Slots
+  const timeSlotsRes = await fetch("/api/time-slots", { cache: 'no-store' });
+  if (timeSlotsRes.ok) {
+    setTimeSlots(await timeSlotsRes.json());
+  } else {
+    console.error("Failed to fetch time slots");
+    setTimeSlots([]); // Set to empty array on failure
+  }
+
+  // Fetch Activity Types
+  const activityTypesRes = await fetch("/api/activity-types", { cache: 'no-store' });
+  if (activityTypesRes.ok) {
+    setActivityTypes(await activityTypesRes.json());
+  } else {
+    console.error("Failed to fetch activity types");
+    setActivityTypes([]); // Set to empty array on failure
+  }
+
+  // Fetch Timetable Entries
+  const timetableRes = await fetch("/api/timetable", { cache: 'no-store' });
+  if (timetableRes.ok) {
+    const timetableData = await timetableRes.json();
+    if (Array.isArray(timetableData)) {
+      const formattedTimetable = timetableData.map((entry: any) => ({
+        day: entry.days.name,
+        period: entry.time_slots.period,
+        type: entry.activity_types.name,
+        subject: entry.subject,
+      }));
+      setTimetable(formattedTimetable);
+    }
+  } else {
+    console.error("Failed to fetch timetable entries");
+    setTimetable([]); // Set to empty array on failure
+  }
+};
+
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/")
+    } else if (user) {
+      fetchData()
     }
   }, [user, isLoading, router])
 
@@ -128,90 +179,103 @@ export default function TimetablePage() {
     router.push("/")
   }
 
-  const handleUpdateTimetable = (updatedEntry: TimetableEntry) => {
-    setTimetable((prev) => {
-      const existingIndex = prev.findIndex(
-        (entry) => entry.day === updatedEntry.day && entry.period === updatedEntry.period,
-      )
+  const handleUpdateTimetable = async (updatedEntry: TimetableEntry) => {
+    const day = days.find(d => d.name === updatedEntry.day);
+    const timeSlot = timeSlots.find(ts => ts.period === updatedEntry.period);
+    const activityType = activityTypes.find(at => at.name === updatedEntry.type);
 
-      if (existingIndex >= 0) {
-        const updated = [...prev]
-        updated[existingIndex] = updatedEntry
-        return updated
-      } else {
-        return [...prev, updatedEntry]
-      }
-    })
-  }
-
-  const handleAddActivityType = (activityType: ActivityType) => {
-    setActivityTypes((prev) => [...prev, activityType])
-  }
-
-  const handleUpdateActivityType = (updatedType: ActivityType) => {
-    setActivityTypes((prev) => prev.map((type) => (type.id === updatedType.id ? updatedType : type)))
-  }
-
-  const handleDeleteActivityType = (id: string) => {
-    setActivityTypes((prev) => prev.filter((type) => type.id !== id))
-    setTimetable((prev) =>
-      prev.map((entry) =>
-        entry.type === activityTypes.find((type) => type.id === id)?.name
-          ? { ...entry, type: "Free Period", subject: "" }
-          : entry,
-      ),
-    )
-  }
-
-  const handleAddDay = (day: Day) => {
-    setDays((prev) => [...prev, day])
-  }
-
-  const handleUpdateDay = (updatedDay: Day) => {
-    const oldDay = days.find((d) => d.id === updatedDay.id)
-    setDays((prev) => prev.map((day) => (day.id === updatedDay.id ? updatedDay : day)))
-
-    if (oldDay && oldDay.name !== updatedDay.name) {
-      setTimetable((prev) =>
-        prev.map((entry) => (entry.day === oldDay.name ? { ...entry, day: updatedDay.name } : entry)),
-      )
+    if (day && timeSlot && activityType) {
+      await fetch("/api/timetable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          day_id: day.id,
+          time_slot_id: timeSlot.id,
+          activity_type_id: activityType.id,
+          subject: updatedEntry.subject,
+        }),
+      });
+      fetchData();
     }
-  }
+  };
 
-  const handleDeleteDay = (id: string) => {
-    const dayToDelete = days.find((d) => d.id === id)
-    setDays((prev) => prev.filter((day) => day.id !== id))
 
-    if (dayToDelete) {
-      setTimetable((prev) => prev.filter((entry) => entry.day !== dayToDelete.name))
-    }
-  }
+  const handleAddActivityType = async (activityType: Omit<ActivityType, "id">) => {
+    await fetch("/api/activity-types", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(activityType),
+    });
+    fetchData();
+  };
 
-  const handleAddTimeSlot = (timeSlot: TimeSlot) => {
-    setTimeSlots((prev) => [...prev, timeSlot])
-  }
+  const handleUpdateActivityType = async (updatedType: ActivityType) => {
+    await fetch(`/api/activity-types/${updatedType.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedType),
+    });
+    fetchData();
+  };
 
-  const handleUpdateTimeSlot = (updatedTimeSlot: TimeSlot) => {
-    const oldTimeSlot = timeSlots.find((ts) => ts.id === updatedTimeSlot.id)
-    setTimeSlots((prev) => prev.map((slot) => (slot.id === updatedTimeSlot.id ? updatedTimeSlot : slot)))
+  const handleDeleteActivityType = async (id: string) => {
+    await fetch(`/api/activity-types/${id}`, {
+      method: "DELETE",
+    });
+    fetchData();
+  };
 
-    if (oldTimeSlot && oldTimeSlot.period !== updatedTimeSlot.period) {
-      setTimetable((prev) =>
-        prev.map((entry) =>
-          entry.period === oldTimeSlot.period ? { ...entry, period: updatedTimeSlot.period } : entry,
-        ),
-      )
-    }
-  }
 
-  const handleDeleteTimeSlot = (id: string) => {
-    const timeSlotToDelete = timeSlots.find((ts) => ts.id === id)
-    setTimeSlots((prev) => prev.filter((slot) => slot.id !== id))
+  const handleAddDay = async (day: Omit<Day, "id">) => {
+    await fetch("/api/days", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(day),
+    });
+    fetchData();
+  };
 
-    if (timeSlotToDelete) {
-      setTimetable((prev) => prev.filter((entry) => entry.period !== timeSlotToDelete.period))
-    }
-  }
+  const handleUpdateDay = async (updatedDay: Day) => {
+    await fetch(`/api/days/${updatedDay.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedDay),
+    });
+    fetchData();
+  };
+
+  const handleDeleteDay = async (id: string) => {
+    await fetch(`/api/days/${id}`, {
+      method: "DELETE",
+    });
+    fetchData();
+  };
+
+
+  const handleAddTimeSlot = async (timeSlot: Omit<TimeSlot, "id">) => {
+    await fetch("/api/time-slots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(timeSlot),
+    });
+    fetchData();
+  };
+
+  const handleUpdateTimeSlot = async (updatedTimeSlot: TimeSlot) => {
+    await fetch(`/api/time-slots/${updatedTimeSlot.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedTimeSlot),
+    });
+    fetchData();
+  };
+
+  const handleDeleteTimeSlot = async (id: string) => {
+    await fetch(`/api/time-slots/${id}`, {
+      method: "DELETE",
+    });
+    fetchData();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
@@ -229,7 +293,7 @@ export default function TimetablePage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl md:text-6xl font-bold text-gray-800 font-serif">School Timetable</h1>
-            <p className="text-lg text-gray-600 mt-2">Welcome back, {user.name}!</p>
+            <p className="text-lg text-gray-600 mt-2">Welcome back, {user.email}!</p>
           </div>
           <Button
             onClick={handleLogout}

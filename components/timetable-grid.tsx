@@ -1,10 +1,11 @@
-import type { TimetableEntry, ActivityType, Day, TimeSlot } from "@/app/page"
+import type { TimetableEntry, ActivityType, Day, TimeSlot } from "@/app/timetable/page"
+import React from "react"
 
 interface TimetableGridProps {
   timetable: TimetableEntry[]
   activityTypes: ActivityType[]
-  days: Day[] // Added dynamic days prop
-  timeSlots: TimeSlot[] // Added dynamic time slots prop
+  days: Day[]
+  timeSlots: TimeSlot[]
 }
 
 export function TimetableGrid({ timetable, activityTypes, days, timeSlots }: TimetableGridProps) {
@@ -17,7 +18,12 @@ export function TimetableGrid({ timetable, activityTypes, days, timeSlots }: Tim
     return activityType?.color || "#fce7f3" // default pink-100
   }
 
-  const sortedTimeSlots = [...timeSlots].sort((a, b) => a.period - b.period)
+  // Guard against non-array props and create a sorted copy.
+  const sortedTimeSlots = Array.isArray(timeSlots)
+    ? [...timeSlots].sort((a, b) => a.period - b.period)
+    : []
+    
+  const safeDays = Array.isArray(days) ? days : []
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -36,18 +42,17 @@ export function TimetableGrid({ timetable, activityTypes, days, timeSlots }: Tim
                 key={timeSlot.id}
                 className="bg-pink-300 border-2 border-gray-800 p-3 md:p-4 text-center font-bold text-gray-800 rounded-lg"
               >
-                {timeSlot.period}
+                {timeSlot.display_name }
               </div>
             ))}
 
             {/* Timetable Rows */}
-            {days.map((day) => (
-              <>
+            {safeDays.map((day) => (
+              <React.Fragment key={day.id}>
                 <div
-                  key={day.id}
                   className="bg-blue-200 border-2 border-gray-800 p-3 md:p-4 text-center font-bold text-gray-800 rounded-lg flex items-center justify-center"
                 >
-                  <span className="text-xs md:text-sm lg:text-base">{day.name}</span>
+                  <span className="text-xs md:text-sm lg:text-base">{day.display_name}</span>
                 </div>
                 {sortedTimeSlots.map((timeSlot) => {
                   const entry = getEntryForSlot(day.name, timeSlot.period)
@@ -61,7 +66,7 @@ export function TimetableGrid({ timetable, activityTypes, days, timeSlots }: Tim
                     </div>
                   )
                 })}
-              </>
+              </React.Fragment>
             ))}
           </div>
         </div>
