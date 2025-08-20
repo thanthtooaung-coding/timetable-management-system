@@ -180,21 +180,40 @@ export default function TimetablePage() {
   }
 
   const handleUpdateTimetable = async (updatedEntry: TimetableEntry) => {
-    const day = days.find(d => d.name === updatedEntry.day);
-    const timeSlot = timeSlots.find(ts => ts.period === updatedEntry.period);
-    const activityType = activityTypes.find(at => at.name === updatedEntry.type);
+    const originalTimetable = [...timetable];
+    const newTimetable = timetable.map((entry) =>
+      entry.day === updatedEntry.day && entry.period === updatedEntry.period
+        ? updatedEntry
+        : entry
+    );
+    setTimetable(newTimetable);
 
-    if (day && timeSlot && activityType) {
-      await fetch("/api/timetable", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          day_id: day.id,
-          time_slot_id: timeSlot.id,
-          activity_type_id: activityType.id,
-          subject: updatedEntry.subject,
-        }),
-      });
+    try {
+      const day = days.find((d) => d.name === updatedEntry.day);
+      const timeSlot = timeSlots.find((ts) => ts.period === updatedEntry.period);
+      const activityType = activityTypes.find(
+        (at) => at.name === updatedEntry.type
+      );
+
+      if (day && timeSlot && activityType) {
+        const response = await fetch("/api/timetable", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            day_id: day.id,
+            time_slot_id: timeSlot.id,
+            activity_type_id: activityType.id,
+            subject: updatedEntry.subject,
+          }),
+        });
+
+        if (!response.ok) {
+          setTimetable(originalTimetable);
+        }
+      }
+    } catch (error) {
+      setTimetable(originalTimetable);
+    } finally {
       fetchData();
     }
   };
