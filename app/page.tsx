@@ -229,6 +229,7 @@ function RegisterPage({ onBack }: { onBack: () => void }) {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
+  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false)
   const { signUp, isLoading } = useAuth()
   const router = useRouter()
 
@@ -244,10 +245,26 @@ function RegisterPage({ onBack }: { onBack: () => void }) {
     const success = await signUp(name, email, password)
 
     if (success) {
-      router.push("/timetable")
+      setShowConfirmationMessage(true)
     } else {
       setError("Registration failed. Please check your information and try again.")
     }
+  }
+
+  if (showConfirmationMessage) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 flex items-center justify-center">
+        <div className="max-w-md mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6 font-serif">Check your email</h2>
+          <p className="text-gray-600 mb-6">
+            We've sent a confirmation link to <strong>{email}</strong>. Please click the link to complete your registration.
+          </p>
+          <Button onClick={onBack} variant="ghost" className="text-gray-600 hover:text-gray-800">
+            ← Back to Home
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
